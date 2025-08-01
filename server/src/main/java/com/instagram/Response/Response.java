@@ -1,4 +1,4 @@
-package com.instagram.Response;
+package com.instagram.response;
 
 public class Response {
 

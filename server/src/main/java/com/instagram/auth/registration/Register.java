@@ -1,11 +1,17 @@
-package com.instagram.Registration;
+package com.instagram.auth.registration;
 
 
 import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.instagram.config.ObjectIdSerializer;
 
 @Document(collection="users")
 public class Register {
+    @Id
+    @JsonSerialize(using = ObjectIdSerializer.class)
     private ObjectId objectId;
    
     private String email;

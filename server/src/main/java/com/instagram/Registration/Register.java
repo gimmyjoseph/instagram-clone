@@ -15,15 +15,23 @@ public class Register {
     private String fullName;
     private Boolean isPhoneVerified;
     private String otp;
+    private boolean emailVerified;
 
 
+
+     public boolean isEmailVerified() {
+        return emailVerified;
+    }
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
      public String getOtp() {
         return otp;
     }
     public void setOtp(String otp) {
         this.otp = otp;
     }
-     public Boolean getPhoneVerified() {
+     public Boolean isPhoneVerified() {
         return isPhoneVerified;
     }
     public void setPhoneVerified(Boolean isPhoneVerified) {

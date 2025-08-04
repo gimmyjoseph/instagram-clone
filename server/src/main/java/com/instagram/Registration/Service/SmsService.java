@@ -7,10 +7,13 @@ import org.springframework.stereotype.Service;
 import com.instagram.Registration.Register;
 import com.instagram.Registration.RegisterRepository;
 import com.instagram.Registration.RegisterService;
+import com.instagram.Registration.Otp.OtpPhoneNumber.Otp;
+import com.instagram.Registration.Otp.OtpPhoneNumber.OtpRepository;
 import com.instagram.Response.Response;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -29,11 +32,10 @@ public class SmsService {
     private RegisterRepository registerRepository;
 
     @Autowired
-    private RegisterService registerService;
+    private OtpRepository otpRepository;
 
-    /**
-     * Sends an OTP to the specified phone number using Twilio.
-     */
+   
+
     public Response sendOtp(String phoneNumber, String otp) {
         try {
             Twilio.init(accountSid, authToken);
@@ -49,33 +51,40 @@ public class SmsService {
         }
     }
 
-    /**
-     * Verifies the user's OTP and marks their phone as verified if it matches.
-     */
-    public Response verify(Register register) {
-        String phoneNumber = register.getPhoneNumber();
-        String inputOtp = register.getOtp();
+      public Response phoneOtpVerify(Register register) {
+    String phoneNumber = register.getPhoneNumber();
+    String inputOtp = register.getOtp();
 
-        if (phoneNumber == null || inputOtp == null) {
-            return new Response(400, "Phone number and OTP are required", false, null);
-        }
-
-        Optional<Register> optionalRegister = registerRepository.findByPhoneNumber(phoneNumber);
-
-        if (optionalRegister.isEmpty()) {
-            return new Response(404, "User not found", false, null);
-        }
-
-        Register user = optionalRegister.get();
-        String storedOtp = user.getOtp();
-
-        if (inputOtp.equals(storedOtp)) {
-            user.setPhoneVerified(true);
-            user.setOtp(null); // Optional: clear OTP after successful verification
-            registerRepository.save(user);
-            return new Response(200, "OTP verified successfully", true, user);
-        } else {
-            return new Response(400, "Invalid OTP", false, null);
-        }
+    // Check for missing phone or OTP
+    if (phoneNumber == null || inputOtp == null) {
+        return new Response(400, "Phone number and OTP are required", false, null);
     }
+
+    // Get the most recent OTP entry for this phone number
+    List<Otp> otpRecords = otpRepository.findByPhoneNumber(phoneNumber);
+    if (otpRecords.isEmpty()) {
+        return new Response(404, "OTP not found", false, null);
+    }
+
+    Otp latestOtp = otpRecords.get(otpRecords.size() - 1);
+
+    // Match OTP
+    if (inputOtp.equals(latestOtp.getOtp())) {
+        // ✅ Update phoneVerified = true (optional enhancement)
+        Optional<Register> optionalRegister = registerRepository.findByPhoneNumber(phoneNumber);
+        if (optionalRegister.isPresent()) {
+            registerRepository.deleteByPhoneNumber(phoneNumber);
+            Register foundRegister = optionalRegister.get();
+            foundRegister.setPhoneVerified(true); // Add this field in Register model
+            registerRepository.save(foundRegister);
+        }
+
+        return new Response(200, "Phone OTP verified successfully", true, null);
+    } else {
+        return new Response(400, "Invalid OTP", false, null);
+    }
+}
+
+
+
 }

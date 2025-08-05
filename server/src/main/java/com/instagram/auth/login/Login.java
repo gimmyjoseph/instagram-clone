@@ -1,6 +1,5 @@
 package com.instagram.auth.login;
 
-import org.springframework.data.mongodb.core.mapping.Document;
 
 //@Document(collection = "users")
 public class Login {

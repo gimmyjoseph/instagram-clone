@@ -1,4 +1,4 @@
-package com.instagram.Registration.Otp.OtpEmail;
+package com.instagram.auth.registration.otp.otpemail;
 
 import java.util.Date;
 

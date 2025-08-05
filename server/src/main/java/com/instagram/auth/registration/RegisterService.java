@@ -2,11 +2,15 @@
 package com.instagram.auth.registration;
 
 import java.security.SecureRandom;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.instagram.auth.registration.Service.EmailService;
+import com.instagram.auth.registration.Service.SmsService;
+import com.instagram.auth.registration.otp.otpemail.EmailOtpService;
+import com.instagram.auth.registration.otp.otpphonenumber.OtpService;
+import com.instagram.response.Response;
 
 @Service
 public class RegisterService {
@@ -16,50 +20,86 @@ public class RegisterService {
     private RegisterRepository registerRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private OtpService optService;
 
-    public String createOtp(Register register) {
-        // Validate input
-        if (register == null || register.getPhoneNumber() == null || register.getPhoneNumber().trim().isEmpty()) {
-            throw new IllegalArgumentException("Phone number is required.");
-        }
-        if (register.getPassword() == null || register.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("Password is required.");
-        }
-        if (register.getUserName() == null || register.getUserName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Username is required.");
-        }
-        if (register.getEmail() == null || register.getEmail().trim().isEmpty()) {
-            throw new IllegalArgumentException("Email is required.");
-        }
+    @Autowired
+    private EmailOtpService emailOtpService;
 
-        // Normalize phone number (remove +, spaces, dashes)
-        String normalizedPhoneNumber = register.getPhoneNumber().replaceAll("[+\\s-]", "");
-        register.setPhoneNumber(normalizedPhoneNumber);
+    @Autowired
+    private SmsService smsService;
 
-        // Check for existing user
-        Optional<Register> existingByPhone = registerRepository.findByPhoneNumber(normalizedPhoneNumber);
-        Optional<Register> existingByUserName = registerRepository.findByUserName(register.getUserName());
-        Optional<Register> existingByEmail = registerRepository.findByEmail(register.getEmail());
+    @Autowired
+    private EmailService emailService;
 
-        if (existingByPhone.isPresent() || existingByUserName.isPresent() || existingByEmail.isPresent()) {
-            throw new IllegalArgumentException("User already exists with provided phone number, username, or email.");
-        }
-
-        // Generate 6-digit OTP
-        String otp = String.format("%06d", random.nextInt(1_000_000));
-
-        // Set OTP, hashed password, and verification status
-        register.setOtp(otp);
-        register.setPhoneVerified(false);
-        register.setPassword(passwordEncoder.encode(register.getPassword())); // Hash password
-        register.setObjectId(null); // Ensure MongoDB generates _id
-
-        // Save the document
-        Register savedRegister = registerRepository.save(register);
-        System.out.println("User saved: email=" + savedRegister.getEmail() + ", objectId=" + 
-                          (savedRegister.getObjectId() != null ? savedRegister.getObjectId().toString() : "null"));
-
-        return otp;
+   public Response sendOtpOrEmailOtp(Register register) {
+    if (register == null) {
+        return new Response(400, "Request body is missing", false, null);
     }
-}
+
+    String phone = register.getPhoneNumber();
+    String email = register.getEmail();
+
+    boolean phoneExists = (phone != null && registerRepository.findByPhoneNumber(phone).isPresent());
+    boolean emailExists = (email != null && registerRepository.findByEmail(email).isPresent());
+
+    if (phoneExists || emailExists) {
+        return new Response(409, "Phone number or email already registered", false, null);
+    }
+
+    if (phone != null && !phone.trim().isEmpty()) {
+        String otp = createOtp(register); // saves Register + otp
+        return smsService.sendOtp(phone, otp); // builds and returns Response
+    }
+
+    if (email != null && !email.trim().isEmpty()) {
+        String otp = createEmailOtp(register); // saves Register + otp
+        String subject = "Your OTP Code";
+        String message = "Your OTP code is: " + otp;
+        emailService.sendEmail(email, subject, message); // send mail
+        return new Response(200, "OTP sent to email successfully", true, null); // reused response
+    }
+
+    return new Response(400, "Either phone number or email is required", false, null);
+   }
+
+
+
+
+
+
+
+     public String createOtp(Register register) {
+            if (register == null || register.getPhoneNumber() == null || register.getPhoneNumber().trim().isEmpty()) {
+                throw new IllegalArgumentException("Phone number is required.");
+            }
+
+            String phoneNumber = register.getPhoneNumber().trim();
+
+                registerRepository.deleteByPhoneNumber(phoneNumber);
+            register.setPhoneVerified(false);
+             registerRepository.save(register);
+
+            String otp = String.format("%06d", random.nextInt(1_000_000));
+            optService.saveOtp(phoneNumber, otp);
+
+            return otp;
+        }
+
+            
+         public String createEmailOtp(Register register) {
+            if (register == null || register.getEmail() == null || register.getEmail().trim().isEmpty()) {
+                throw new IllegalArgumentException("Email is required.");
+            }
+
+            String email = register.getEmail().trim();
+            registerRepository.deleteByEmail(email);
+            register.setEmailVerified(false);
+            registerRepository.save(register);
+
+            String otp = String.format("%06d", random.nextInt(1_000_000));
+            emailOtpService.saveOtp(email, otp);
+            return otp;
+        }
+
+    }
+

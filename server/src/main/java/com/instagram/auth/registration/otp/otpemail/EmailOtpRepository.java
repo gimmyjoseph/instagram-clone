@@ -1,4 +1,5 @@
-package com.instagram.Registration.Otp.OtpEmail;
+package com.instagram.auth.registration.otp.otpemail;
+
 import org.bson.types.ObjectId;
 import java.util.List;
 import org.springframework.data.mongodb.repository.MongoRepository;

@@ -1,4 +1,4 @@
-package com.instagram.Registration.Otp.OtpPhoneNumber;
+package com.instagram.auth.registration.otp.otpphonenumber;
 
 import java.util.List;
 

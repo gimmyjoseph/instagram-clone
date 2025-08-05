@@ -67,13 +67,20 @@ public class LoginService {
         System.out.println("User found: " + user.getEmail());
 
         // Verify password
-        if (!passwordEncoder.matches(login.getPassword(), user.getPassword())) {
+        //if (!passwordEncoder.matches(login.getPassword(), user.getPassword()))
+        // if (!passwordEncoder.matches(login.getPassword(), user.getPassword()))
+        // {
+        //     System.out.println("Invalid password for identifier: " + identifier);
+        //     return new Response(401, "Invalid password", false);
+        // }
+
+        if (!login.getPassword().equals(user.getPassword())) {
             System.out.println("Invalid password for identifier: " + identifier);
             return new Response(401, "Invalid password", false);
         }
 
         // Check phone verification
-        if (!user.getPhoneVerified()) {
+        if (!user.isPhoneVerified()) {
             System.out.println("Phone not verified for identifier: " + identifier);
             return new Response(403, "Phone number not verified", false);
         }

@@ -1,4 +1,4 @@
-package com.instagram.Registration.Service;
+package com.instagram.auth.registration.Service;
 
 import java.util.List;
 
@@ -9,11 +9,13 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 
-import com.instagram.Registration.Register;
-import com.instagram.Registration.Otp.OtpEmail.EmailOtp;
-import com.instagram.Registration.Otp.OtpEmail.EmailOtpRepository;
-import com.instagram.Response.Response;
-import com.instagram.Registration.RegisterRepository;
+
+import com.instagram.auth.registration.Register;
+import com.instagram.auth.registration.RegisterRepository;
+import com.instagram.auth.registration.otp.otpemail.EmailOtp;
+import com.instagram.response.Response;
+
+
 
  @Service
 public class EmailService {
@@ -22,7 +24,7 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     @Autowired
-    private EmailOtpRepository emailOtpRepository;
+    private com.instagram.auth.registration.otp.otpemail.EmailOtpRepository emailOtpRepository;
     @Autowired
     private RegisterRepository registerRepository;
 

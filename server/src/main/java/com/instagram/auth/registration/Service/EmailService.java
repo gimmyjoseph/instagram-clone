@@ -1,21 +1,19 @@
 package com.instagram.auth.registration.Service;
 
+
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import java.util.Optional;
-
-
 
 import com.instagram.auth.registration.Register;
 import com.instagram.auth.registration.RegisterRepository;
 import com.instagram.auth.registration.otp.otpemail.EmailOtp;
+import com.instagram.auth.registration.otp.otpemail.EmailOtpRepository;
 import com.instagram.response.Response;
-
-
 
  @Service
 public class EmailService {
@@ -24,7 +22,7 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     @Autowired
-    private com.instagram.auth.registration.otp.otpemail.EmailOtpRepository emailOtpRepository;
+    private EmailOtpRepository emailOtpRepository;
     @Autowired
     private RegisterRepository registerRepository;
 
@@ -67,7 +65,7 @@ public class EmailService {
             registerRepository.save(foundRegister);
         }
 
-        return new Response(200, "Email OTP verified successfully", true, null);
+        return new Response(200, "Email OTP verified successfully", true);
     } else {
         return new Response(400, "Invalid OTP", false, null);
     }

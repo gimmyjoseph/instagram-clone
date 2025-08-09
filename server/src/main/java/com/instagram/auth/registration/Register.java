@@ -1,20 +1,23 @@
 package com.instagram.auth.registration;
 
 
+
+import java.time.LocalDate;
+import java.util.List;
+
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.instagram.config.ObjectIdSerializer;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.instagram.posts.Posts;
 
 @Document(collection="users")
 public class Register {
     @Id
-    @JsonSerialize(using = ObjectIdSerializer.class)
     private ObjectId objectId;
-   
-    private String email;
+    private String userId;
+     private String email;
     private String phoneNumber;
     private String password;
     private String userName;
@@ -22,8 +25,24 @@ public class Register {
     private Boolean isPhoneVerified;
     private String otp;
     private boolean emailVerified;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthDate;
+    private List<Posts> posts;
 
+    
 
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+    public String getUserId() {
+        return userId;
+    }
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
      public boolean isEmailVerified() {
         return emailVerified;

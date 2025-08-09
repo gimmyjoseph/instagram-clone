@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.instagram.auth.login.token.service.TokenService;
@@ -27,8 +26,8 @@ public class LoginService {
     @Autowired
     private TokenService tokenService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    // @Autowired
+    // private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -66,23 +65,27 @@ public class LoginService {
         Register user = optionalUser.get();
         System.out.println("User found: " + user.getEmail());
 
-        // Verify password
-        //if (!passwordEncoder.matches(login.getPassword(), user.getPassword()))
-        // if (!passwordEncoder.matches(login.getPassword(), user.getPassword()))
-        // {
-        //     System.out.println("Invalid password for identifier: " + identifier);
-        //     return new Response(401, "Invalid password", false);
-        // }
-
+        // Verify password (CHANGE: Use plain text comparison, comment out hashing for future)
         if (!login.getPassword().equals(user.getPassword())) {
             System.out.println("Invalid password for identifier: " + identifier);
             return new Response(401, "Invalid password", false);
         }
+        // For future use: Password hashing verification
+        /*
+        if (!passwordEncoder.matches(login.getPassword(), user.getPassword())) {
+            System.out.println("Invalid password for identifier: " + identifier);
+            return new Response(401, "Invalid password", false);
+        }
+        */
 
-        // Check phone verification
-        if (!user.isPhoneVerified()) {
+        // Check verification based on login method
+        if (identifier.equals(user.getPhoneNumber()) && !user.isPhoneVerified()) {
             System.out.println("Phone not verified for identifier: " + identifier);
             return new Response(403, "Phone number not verified", false);
+        }
+        if (identifier.equals(user.getEmail()) && !user.isEmailVerified()) {
+            System.out.println("Email not verified for identifier: " + identifier);
+            return new Response(403, "Email not verified", false);
         }
 
         // Generate JWT tokens

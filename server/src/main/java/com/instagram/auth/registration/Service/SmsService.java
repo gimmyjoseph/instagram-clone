@@ -1,12 +1,9 @@
 
 package com.instagram.auth.registration.Service;
 
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 
 import com.instagram.auth.registration.Register;
 import com.instagram.auth.registration.RegisterRepository;
@@ -17,7 +14,7 @@ import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 
 import java.util.List;
-
+import java.util.Optional;
 
 @Service
 public class SmsService {
@@ -76,9 +73,10 @@ public class SmsService {
         // ✅ Update phoneVerified = true (optional enhancement)
         Optional<Register> optionalRegister = registerRepository.findByPhoneNumber(phoneNumber);
         if (optionalRegister.isPresent()) {
-            registerRepository.deleteByPhoneNumber(phoneNumber);
             Register foundRegister = optionalRegister.get();
-            foundRegister.setPhoneVerified(true); // Add this field in Register model
+            foundRegister.setPhoneVerified(true);
+            foundRegister.setUserId(foundRegister.getObjectId().toHexString());
+             // Add this field in Register model
             registerRepository.save(foundRegister);
         }
 
@@ -87,8 +85,6 @@ public class SmsService {
         return new Response(400, "Invalid OTP", false, null);
     }
 }
-
-
 
 
 

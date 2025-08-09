@@ -15,8 +15,9 @@ public interface RegisterRepository  extends MongoRepository<Register, ObjectId>
          void deleteByEmail(String email);
          Optional<Register> findByEmail(String email);
          Optional<Register> findByUserName(String userName);
+        Optional<Register> findByUserId(String userId);
+         
+ }
+         
 
 
-
-
-}

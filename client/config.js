@@ -9,5 +9,6 @@ export const API_ROUTES = {
     REGISTER: `${BASE_URL}/auth/register`,
     VERIFY_PHONE_OTP: `${BASE_URL}/api/verify/phone/otp`,
     VERIFY_EMAIL_OTP: `${BASE_URL}/api/verify/email/otp`,
+    PRIVACY:`${BASE_URL}/user/privacy/{id}`,
   },
 };

@@ -48,7 +48,7 @@ const Birthday = () => {
     
     console.log("Backend response:", response.data);
     alert("✅ Registered successfully!");
-    router.push("/OtpVerify"); // or home
+    router.push("/otpVerify"); // or home
   } catch (err) {
     console.error("Error during registration:", err);
     const errorMessage =

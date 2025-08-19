@@ -90,11 +90,11 @@ public class LoginService {
 
         // Generate JWT tokens
         Map<String, Object> claims = new LinkedHashMap<>();
-        claims.put("user_id", user.getObjectId().toString());
-        claims.put("full_name", user.getFullName());
+        claims.put("userId", user.getObjectId().toString());
+        claims.put("fullName", user.getFullName());
         claims.put("email", user.getEmail());
         claims.put("username", user.getUserName());
-        claims.put("phone_number", user.getPhoneNumber());
+        claims.put("phoneNumber", user.getPhoneNumber());
 
         String accessToken = jwtUtil.generateAccessToken(user.getObjectId().toString(), claims);
         String refreshToken = jwtUtil.generateRefreshToken(user.getObjectId().toString());

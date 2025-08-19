@@ -38,7 +38,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <AuthProvider>
-          <UserProvider>{children}</UserProvider>
+          {/* <UserProvider>{children}</UserProvider> */}
+          {children}
         </AuthProvider>
       </body>
     </html>

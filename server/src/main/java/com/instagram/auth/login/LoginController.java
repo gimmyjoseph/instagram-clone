@@ -39,7 +39,8 @@ public class LoginController {
             HttpServletRequest request,
             HttpServletResponse response) {
         try {
-            Response result = loginService.logout(authHeader, request.getCookies(), response);
+            // Response result = loginService.logout(authHeader, request.getCookies(), response);
+            Response result = loginService.logout(request.getCookies(), response);
             return ResponseEntity.status(result.getStatuscode()).body(result);
         } catch (Exception e) {
             System.err.println("Logout error: " + e.getMessage());

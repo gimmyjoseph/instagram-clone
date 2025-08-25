@@ -1,20 +1,16 @@
 
 // import axios from "axios";
 // import { API_ROUTES } from "@/config";
+// import { onAuthLogoutCallback } from "@/context/AuthContext";
 
-// // Create an Axios instance with default options
 // const axiosInstance = axios.create({
-//   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL, // CHANGED: Use environment variable for backend URL[](http://localhost:8080)
-//   withCredentials: true, // Ensure HTTP-only cookies are sent
+//   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+//   withCredentials: true,
 // });
 
-// // Variables to manage refresh state
 // let isRefreshing = false;
 // let failedQueue = [];
 
-// /**
-//  * Processes the queue of failed requests.
-//  */
 // const processQueue = (error) => {
 //   failedQueue.forEach((prom) => {
 //     if (error) {
@@ -26,61 +22,65 @@
 //   failedQueue = [];
 // };
 
-// /**
-//  * Response interceptor to handle 401 errors by refreshing the token.
-//  */
 // axiosInstance.interceptors.response.use(
-//   (response) => response,
+//   (response) => {
+//     return response;
+//   },
 //   async (error) => {
 //     const originalRequest = error.config;
-
-//     // Handle 401 errors and prevent infinite retry loops
 //     if (error.response && error.response.status === 401 && !originalRequest._retry) {
 //       originalRequest._retry = true;
-
+      
 //       if (isRefreshing) {
-//         // Queue the request if a refresh is in progress
 //         return new Promise((resolve, reject) => {
 //           failedQueue.push({ resolve, reject });
-//         })
-//           .then(() => axiosInstance(originalRequest))
-//           .catch((err) => Promise.reject(err));
+//         }).then(() => {
+//           return axiosInstance(originalRequest);
+//         }).catch((err) => {
+//           return Promise.reject(err);
+//         });
 //       }
 
 //       isRefreshing = true;
 
 //       try {
-//         // CHANGED: Use POST for refresh-token endpoint, no Authorization header needed
-//         await axiosInstance.post(API_ROUTES.AUTH_SERVICE.REFRESH_TOKEN);
+//         await axiosInstance.post(
+//           API_ROUTES.AUTH_SERVICE.REFRESH_TOKEN
+//         );
 //         processQueue(null);
-//         return axiosInstance(originalRequest); // Retry the original request
+//         return axiosInstance(originalRequest);
 //       } catch (refreshError) {
+//         if (onAuthLogoutCallback) {
+//           onAuthLogoutCallback();
+//         }
 //         processQueue(refreshError);
 //         return Promise.reject(refreshError);
 //       } finally {
 //         isRefreshing = false;
 //       }
 //     }
-
 //     return Promise.reject(error);
 //   }
 // );
 
 // export default axiosInstance;
 
+
 import axios from "axios";
 import { API_ROUTES } from "@/config";
+import { onAuthLogoutCallback } from "@/context/AuthContext";
 
+// Create Axios instance
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  withCredentials: true,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080",
+  withCredentials: true, // Ensure cookies are sent with requests
 });
 
 let isRefreshing = false;
 let failedQueue = [];
 
+// Process queued requests after token refresh
 const processQueue = (error) => {
-  console.log("Processing queue with error:", error?.message || "None");
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -91,29 +91,52 @@ const processQueue = (error) => {
   failedQueue = [];
 };
 
-axiosInstance.interceptors.response.use(
-  (response) => {
-    console.log(`Request succeeded: ${response.config.url}, Status: ${response.status}`);
-    return response;
+// Request interceptor for debugging
+axiosInstance.interceptors.request.use(
+  (config) => {
+    console.log("Request config:", {
+      url: config.url,
+      headers: config.headers,
+    });
+    return config;
   },
+  (error) => {
+    console.error("Request interceptor error:", error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for handling 401 errors and token refresh
+axiosInstance.interceptors.response.use(
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    // Skip retry for signin, refresh, or if refresh already attempted or explicitly skipped
+    if (
+      originalRequest.url === API_ROUTES.AUTH_SERVICE.SIGNIN ||
+      originalRequest.url === API_ROUTES.AUTH_SERVICE.REFRESH ||
+      originalRequest._retry ||
+      originalRequest.headers["X-Skip-Refresh"]
+    ) {
+      console.log("Skipping token refresh for:", originalRequest.url);
+      return Promise.reject(error);
+    }
+
+    if (error.response && error.response.status === 401) {
+      console.log("401 error detected, attempting token refresh");
       originalRequest._retry = true;
-      console.log("401 error detected for:", originalRequest.url, "Headers:", originalRequest.headers);
 
       if (isRefreshing) {
-        console.log("Token refresh in progress, queuing request:", originalRequest.url);
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then(() => {
-            console.log("Retrying original request:", originalRequest.url);
+            console.log("Retrying original request after refresh");
             return axiosInstance(originalRequest);
           })
           .catch((err) => {
-            console.error("Queued request failed:", err.message);
+            console.error("Failed to retry original request:", err);
             return Promise.reject(err);
           });
       }
@@ -121,13 +144,16 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        console.log("Refreshing token via:", API_ROUTES.AUTH_SERVICE.REFRESH_TOKEN);
-        const response = await axiosInstance.post(API_ROUTES.AUTH_SERVICE.REFRESH_TOKEN);
-        console.log("Token refresh response:", JSON.stringify(response.data, null, 2));
+        await axiosInstance.post(API_ROUTES.AUTH_SERVICE.REFRESH);
+        console.log("Token refresh successful");
         processQueue(null);
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        console.error("Token refresh failed:", refreshError.response?.data?.message || refreshError.message);
+        console.error("Token refresh failed:", refreshError.message);
+        if (onAuthLogoutCallback) {
+          console.log("Triggering logout due to refresh failure");
+          onAuthLogoutCallback();
+        }
         processQueue(refreshError);
         return Promise.reject(refreshError);
       } finally {
@@ -135,7 +161,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    console.error("Request failed:", error.response?.data?.message || error.message, "URL:", originalRequest.url, "Status:", error.response?.status);
+    console.error("Response error:", error.message);
     return Promise.reject(error);
   }
 );

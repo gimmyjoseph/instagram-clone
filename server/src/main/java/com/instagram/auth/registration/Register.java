@@ -119,6 +119,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.instagram.posts.Posts;
 
 @Document(collection="users")
@@ -126,21 +127,37 @@ public class Register {
     @Id
     private ObjectId objectId;
     private String userId;
-     private String email;
+    private String email;
     private String phoneNumber;
+    //@JsonIgnore
     private String password;
     private String userName;
     private String fullName;
     private Boolean isPhoneVerified;
+   // @JsonIgnore
     private String otp;
     private boolean emailVerified;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;
     private List<Posts> posts;
     private boolean isPrivate=false;
+    private long followingCount;
+    private long followerCount;
 
     
 
+        public long getFollowingCount() {
+        return followingCount;
+    }
+    public void setFollowingCount(long followingCount) {
+        this.followingCount = followingCount;
+    }
+    public long getFollowerCount() {
+        return followerCount;
+    }
+    public void setFollowerCount(long followerCount) {
+        this.followerCount = followerCount;
+    }
         public boolean isPrivate() {
             return isPrivate;
         }

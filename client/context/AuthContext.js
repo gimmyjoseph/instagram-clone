@@ -1,20 +1,23 @@
 
 
+
 // "use client";
 
-// import React, { createContext, useReducer, useContext, useCallback } from "react";
+// import React, { createContext, useReducer, useContext, useCallback, useEffect } from "react";
 // import { useRouter } from "next/navigation";
-// import axiosInstance from "@/utils/auth/axiosInstance";
 // import { API_ROUTES } from "@/config";
+// import axiosInstance from "@/utils/auth/axiosInstance";
 
+// // Initial State for the authentication context
 // const initialState = {
-//   loading: false,
+//   loading: false, // Start with loading false to keep form interactive
 //   error: null,
 //   isAuthenticated: false,
 //   user: null,
 //   success: null,
 // };
 
+// // Action types
 // const actionTypes = {
 //   LOADING: "LOADING",
 //   ERROR: "ERROR",
@@ -24,10 +27,11 @@
 //   CLEAR_STATE: "CLEAR_STATE",
 // };
 
+// // Reducer function
 // const authReducer = (state, action) => {
 //   switch (action.type) {
 //     case actionTypes.LOADING:
-//       return { ...state, loading: true, error: null, success: null };
+//       return { ...state, loading: action.payload, error: null, success: null };
 //     case actionTypes.ERROR:
 //       return { ...state, loading: false, error: action.payload, success: null };
 //     case actionTypes.SUCCESS:
@@ -41,9 +45,9 @@
 //         error: null,
 //       };
 //     case actionTypes.LOGOUT:
-//       return { ...initialState };
+//       return { ...initialState, loading: false, isAuthenticated: false };
 //     case actionTypes.CLEAR_STATE:
-//       return { ...initialState };
+//       return { ...initialState, loading: false };
 //     default:
 //       return state;
 //   }
@@ -51,174 +55,135 @@
 
 // const AuthContext = createContext();
 
+// let onAuthLogoutCallback = null;
+// export const setAuthLogoutCallback = (callback) => {
+//   onAuthLogoutCallback = callback;
+// };
+
 // export const AuthProvider = ({ children }) => {
 //   const [state, dispatch] = useReducer(authReducer, initialState);
 //   const router = useRouter();
 
-//   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-//   if (!baseUrl) {
-//     console.error("NEXT_PUBLIC_API_BASE_URL is not defined in .env");
-//   }
+//   const forceLogout = useCallback(async () => {
+//     try {
+//       const logoutUrl = API_ROUTES.AUTH_SERVICE.SIGNOUT;
+//       if (logoutUrl && logoutUrl.startsWith("http")) {
+//         await axiosInstance.post(logoutUrl);
+//         console.log("Backend logout successful via forceLogout.");
+//       }
+//     } catch (err) {
+//       console.error("Backend logout failed during forceLogout:", err.message);
+//     } finally {
+//       dispatch({ type: actionTypes.LOGOUT });
+//       router.push("/");
+//     }
+//   }, [router]);
+
+//   useEffect(() => {
+//     setAuthLogoutCallback(forceLogout);
+//     return () => setAuthLogoutCallback(null);
+//   }, [forceLogout]);
+
+//   useEffect(() => {
+//     const checkAuth = async () => {
+//       dispatch({ type: actionTypes.LOADING, payload: true });
+//       try {
+//         const response = await axiosInstance.get(API_ROUTES.AUTH_SERVICE.PROFILE, {
+//           headers: { "X-Skip-Refresh": "true" }, // Skip token refresh for initial check
+//         });
+//         if (response.data.success) {
+//           dispatch({ type: actionTypes.AUTHENTICATED, payload: response.data.data });
+//         } else {
+//           dispatch({ type: actionTypes.LOGOUT });
+//         }
+//       } catch (error) {
+//         console.error("Initial auth check failed:", error.message);
+//         dispatch({ type: actionTypes.LOGOUT });
+//       } finally {
+//         dispatch({ type: actionTypes.LOADING, payload: false });
+//       }
+//     };
+
+//     checkAuth();
+//   }, []);
 
 //   const signin = useCallback(async (identifier, password) => {
-//     dispatch({ type: actionTypes.LOADING });
+//     dispatch({ type: actionTypes.LOADING, payload: true });
 //     try {
-//       const loginUrl = API_ROUTES.AUTH_SERVICE.SIGNIN;
-//       if (!loginUrl || !loginUrl.startsWith("http")) {
-//         throw new Error(`Invalid login URL: ${loginUrl}. Ensure NEXT_PUBLIC_API_BASE_URL is set.`);
-//       }
-//       console.log("Attempting login with URL:", loginUrl);
-
-//       const response = await axiosInstance.post(loginUrl, { identifier, password });
-//       console.log("Signin response:", JSON.stringify(response.data, null, 2));
+//       const response = await axiosInstance.post(API_ROUTES.AUTH_SERVICE.SIGNIN, {
+//         identifier,
+//         password,
+//       });
 
 //       if (response.data.success) {
-//         const { id, userName, fullName, email, phoneNumber } = response.data.data;
-
-//         if (!id) {
-//           throw new Error("Invalid user data: missing user ID (id)");
-//         }
-//         if ((email && phoneNumber) || (!email && !phoneNumber)) {
-//           throw new Error("Invalid user data: User must have exactly one of email or phoneNumber");
-//         }
-
-//         const [firstName, ...lastNameParts] = (fullName || "").split(" ");
-//         const lastName = lastNameParts.join(" ") || "";
-//         const userData = {
-//           id,
-//           email: email || null,
-//           phoneNumber: phoneNumber || null,
-//           userName,
-//           fullName,
-//           first_name: firstName,
-//           last_name: lastName,
-//           isPhoneVerified: false,
-//           emailVerified: false,
-//           otp: null,
-//           isPrivate: false, // Default to false during registration
-//           roles: ["user"],
-//         };
-//         dispatch({
-//           type: actionTypes.AUTHENTICATED,
-//           payload: userData,
-//         });
+//         const userData = response.data.data;
+//         dispatch({ type: actionTypes.AUTHENTICATED, payload: userData });
 //         dispatch({
 //           type: actionTypes.SUCCESS,
 //           payload: response.data.message || "Login successful",
 //         });
-//         router.push("/dashboard/profile");
-//         return {
-//           status: 200,
-//           message: response.data.message,
-//         };
+//         return { status: 200, message: response.data.message };
 //       } else {
 //         throw new Error(response.data.message || "Login failed");
 //       }
 //     } catch (error) {
-//       const message = error.response?.data?.message || error.message || "Login failed";
-//       console.error("Signin error:", message);
-//       dispatch({ type: actionTypes.ERROR, payload: message });
-//       return {
-//         status: error.response?.status || 400,
-//         message,
-//       };
+//       let errorMessage = "Login failed. Please try again.";
+//       if (error.response && error.response.data && error.response.data.message) {
+//         errorMessage = error.response.data.message;
+//       } else if (error.message) {
+//         errorMessage = error.message;
+//       }
+//       console.error("Signin error:", errorMessage);
+//       dispatch({ type: actionTypes.ERROR, payload: errorMessage });
+//       return { status: error.response?.status || 400, message: errorMessage };
+//     } finally {
+//       dispatch({ type: actionTypes.LOADING, payload: false });
 //     }
-//   }, [router]);
+//   }, []);
 
-//   const verifyOtp = useCallback(async (identifier, otp) => {
-//     dispatch({ type: actionTypes.LOADING });
+//   const followUser = useCallback(async (followerId, followingId) => {
 //     try {
-//       // Determine if identifier is email or phone number
-//       const isEmail = identifier.includes("@");
-//       const verifyUrl = isEmail
-//         ? `${baseUrl}/api/verify/email/otp`
-//         : `${baseUrl}/api/verify/phone/otp`;
-//       console.log("Attempting OTP verification with URL:", verifyUrl);
-
-//       // Send Register-compatible payload
-//       const payload = {
-//         email: isEmail ? identifier : null,
-//         phoneNumber: !isEmail ? identifier : null,
-//         otp,
-//       };
-//       const response = await axiosInstance.post(verifyUrl, payload);
-//       console.log("Verify OTP response:", JSON.stringify(response.data, null, 2));
-
+//       const response = await axiosInstance.post(API_ROUTES.FOLLOW_SERVICE.FOLLOW, {
+//         followerId,
+//         followingId,
+//       });
 //       if (response.data.success) {
-//         const { id, userName, fullName, email, phoneNumber, isPhoneVerified, emailVerified, otp } =
-//           response.data.data || {};
-//         if (!id) {
-//           throw new Error("Invalid user data: missing user ID (id)");
-//         }
-//         const [firstName, ...lastNameParts] = (fullName || "").split(" ");
-//         const lastName = lastNameParts.join(" ") || "";
-//         const updatedUser = {
-//           id,
-//           email: email || null,
-//           phoneNumber: phoneNumber || null,
-//           userName,
-//           fullName,
-//           first_name: firstName,
-//           last_name: lastName,
-//           isPhoneVerified: isPhoneVerified || false,
-//           emailVerified: emailVerified || false,
-//           otp: otp || null,
-//           isPrivate: state.user?.isPrivate || false, // Preserve existing isPrivate value
-//           roles: state.user?.roles || ["user"],
-//         };
-//         dispatch({
-//           type: actionTypes.AUTHENTICATED,
-//           payload: updatedUser,
-//         });
-//         dispatch({
-//           type: actionTypes.SUCCESS,
-//           payload: response.data.message || "OTP verified successfully",
-//         });
-//         return {
-//           status: 200,
-//           message: response.data.message,
-//         };
+//         console.log("Follow successful:", response.data.message);
+//         return { status: 201, message: "Followed successfully" };
 //       } else {
-//         throw new Error(response.data.message || "OTP verification failed");
+//         return { status: response.data.statuscode, message: response.data.message };
 //       }
 //     } catch (error) {
-//       const message = error.response?.data?.message || error.message || "OTP verification failed";
-//       console.error("Verify OTP error:", message);
-//       dispatch({ type: actionTypes.ERROR, payload: message });
-//       return {
-//         status: error.response?.status || 400,
-//         message,
-//       };
+//       let errorMessage = "Could not follow user.";
+//       if (error.response && error.response.data && error.response.data.message) {
+//         errorMessage = error.response.data.message;
+//       } else if (error.message) {
+//         errorMessage = error.message;
+//       }
+//       console.error("Follow error:", errorMessage);
+//       return { status: error.response?.status || 500, message: errorMessage };
 //     }
-//   }, [state.user]);
+//   }, []);
 
 //   const logout = useCallback(async () => {
-//     dispatch({ type: actionTypes.LOADING });
-//     try {
-//       const logoutUrl = API_ROUTES.AUTH_SERVICE.SIGNOUT;
-//       if (!logoutUrl || !logoutUrl.startsWith("http")) {
-//         throw new Error(`Invalid logout URL: ${logoutUrl}. Ensure NEXT_PUBLIC_API_BASE_URL is set.`);
-//       }
-//       console.log("Attempting logout with URL:", logoutUrl);
-
-//       await axiosInstance.post(logoutUrl, {});
-//       dispatch({ type: actionTypes.LOGOUT });
-//       dispatch({ type: actionTypes.CLEAR_STATE });
-//       router.push("/login");
-//     } catch (error) {
-//       console.error("Logout error:", error.message);
-//       dispatch({ type: actionTypes.LOGOUT });
-//       dispatch({ type: actionTypes.CLEAR_STATE });
-//       router.push("/login");
-//     }
-//   }, [router]);
+//     forceLogout();
+//   }, [forceLogout]);
 
 //   const clearState = useCallback(() => {
 //     dispatch({ type: actionTypes.CLEAR_STATE });
 //   }, []);
 
 //   return (
-//     <AuthContext.Provider value={{ state, signin, verifyOtp, logout, clearState }}>
+//     <AuthContext.Provider
+//       value={{
+//         state,
+//         signin,
+//         logout,
+//         clearState,
+//         forceLogout,
+//         followUser,
+//       }}
+//     >
 //       {children}
 //     </AuthContext.Provider>
 //   );
@@ -232,35 +197,43 @@
 //   return context;
 // };
 
+// export { onAuthLogoutCallback };
 "use client";
 
 import React, { createContext, useReducer, useContext, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import axiosInstance from "@/utils/auth/axiosInstance";
 import { API_ROUTES } from "@/config";
+import axiosInstance from "@/utils/auth/axiosInstance";
 
+// Initial State for the authentication context
 const initialState = {
-  loading: false,
+  loading: false, // Start with loading false to keep form interactive
   error: null,
   isAuthenticated: false,
   user: null,
   success: null,
 };
 
-
+// Action types
 const actionTypes = {
   LOADING: "LOADING",
-  SUCCESS: "SUCCESS",
   ERROR: "ERROR",
+  SUCCESS: "SUCCESS",
+  AUTHENTICATED: "AUTHENTICATED",
   LOGOUT: "LOGOUT",
-  CLEAR: "CLEAR",
+  CLEAR_STATE: "CLEAR_STATE",
 };
 
-function reducer(state, action) {
+// Reducer function
+const authReducer = (state, action) => {
   switch (action.type) {
     case actionTypes.LOADING:
-      return { ...state, loading: true, error: null, success: null };
+      return { ...state, loading: action.payload, error: null, success: null };
+    case actionTypes.ERROR:
+      return { ...state, loading: false, error: action.payload, success: null };
     case actionTypes.SUCCESS:
+      return { ...state, loading: false, success: action.payload, error: null };
+    case actionTypes.AUTHENTICATED:
       return {
         ...state,
         loading: false,
@@ -268,109 +241,160 @@ function reducer(state, action) {
         user: action.payload,
         error: null,
       };
-    case actionTypes.ERROR:
-      return { ...state, loading: false, error: action.payload };
     case actionTypes.LOGOUT:
-      return { ...initialState };
-    case actionTypes.CLEAR:
-      return { ...state, error: null, success: null };
+      return { ...initialState, loading: false, isAuthenticated: false };
+    case actionTypes.CLEAR_STATE:
+      return { ...initialState, loading: false };
     default:
       return state;
   }
-}
+};
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const router = useRouter();
-  const [state, dispatch] = useReducer(reducer, initialState);
+let onAuthLogoutCallback = null;
+export const setAuthLogoutCallback = (callback) => {
+  onAuthLogoutCallback = callback;
+};
 
-  // ✅ Auth check function
-  const checkAuth = useCallback(async () => {
+export const AuthProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(authReducer, initialState);
+  const router = useRouter();
+
+  const forceLogout = useCallback(async () => {
     try {
-      dispatch({ type: actionTypes.LOADING });
-      const res = await axiosInstance.get(API_ROUTES.AUTH_SERVICE.PROFILE, {
-        withCredentials: true,
-      });
-      dispatch({ type: actionTypes.SUCCESS, payload: res.data });
+      const logoutUrl = API_ROUTES.AUTH_SERVICE.SIGNOUT;
+      if (logoutUrl && logoutUrl.startsWith("http")) {
+        await axiosInstance.post(logoutUrl);
+        console.log("Backend logout successful via forceLogout.");
+      }
     } catch (err) {
-      dispatch({ type: actionTypes.ERROR, payload: null });
+      console.error("Backend logout failed during forceLogout:", err.message);
+    } finally {
       dispatch({ type: actionTypes.LOGOUT });
+      router.push("/");
     }
+  }, [router]);
+
+  useEffect(() => {
+    setAuthLogoutCallback(forceLogout);
+    return () => setAuthLogoutCallback(null);
+  }, [forceLogout]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      dispatch({ type: actionTypes.LOADING, payload: true });
+      try {
+        const response = await axiosInstance.get(API_ROUTES.AUTH_SERVICE.PROFILE, {
+          headers: { "X-Skip-Refresh": "true" }, // Skip token refresh for initial check
+        });
+        if (response.data.success) {
+          dispatch({ type: actionTypes.AUTHENTICATED, payload: response.data.data });
+        } else {
+          dispatch({ type: actionTypes.LOGOUT });
+        }
+      } catch (error) {
+        // Suppress network errors for initial check, as they are expected for unauthenticated users
+        if (error.message !== "Network Error") {
+          console.error("Initial auth check failed:", error.message);
+        }
+        dispatch({ type: actionTypes.LOGOUT });
+      } finally {
+        dispatch({ type: actionTypes.LOADING, payload: false });
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const signin = useCallback(async (identifier, password) => {
+    dispatch({ type: actionTypes.LOADING, payload: true });
     try {
-      dispatch({ type: actionTypes.LOADING });
-      const res = await axiosInstance.post(
-        API_ROUTES.AUTH_SERVICE.SIGNIN,
-        { identifier, password },
-        { withCredentials: true }
-      );
-      dispatch({ type: actionTypes.SUCCESS, payload: res.data.data });
-      return res;
-    } catch (err) {
-      dispatch({
-        type: actionTypes.ERROR,
-        payload: err.response?.data?.message || "Login failed",
+      const response = await axiosInstance.post(API_ROUTES.AUTH_SERVICE.SIGNIN, {
+        identifier,
+        password,
       });
-      return err.response;
+
+      if (response.data.success) {
+        const userData = response.data.data;
+        dispatch({ type: actionTypes.AUTHENTICATED, payload: userData });
+        dispatch({
+          type: actionTypes.SUCCESS,
+          payload: response.data.message || "Login successful",
+        });
+        return { status: 200, message: response.data.message };
+      } else {
+        throw new Error(response.data.message || "Login failed");
+      }
+    } catch (error) {
+      let errorMessage = "Login failed. Please try again.";
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      console.error("Signin error:", errorMessage);
+      dispatch({ type: actionTypes.ERROR, payload: errorMessage });
+      return { status: error.response?.status || 400, message: errorMessage };
+    } finally {
+      dispatch({ type: actionTypes.LOADING, payload: false });
+    }
+  }, []);
+
+  const followUser = useCallback(async (followerId, followingId) => {
+    try {
+      const response = await axiosInstance.post(API_ROUTES.FOLLOW_SERVICE.FOLLOW, {
+        followerId,
+        followingId,
+      });
+      if (response.data.success) {
+        console.log("Follow successful:", response.data.message);
+        return { status: 201, message: "Followed successfully" };
+      } else {
+        return { status: response.data.statuscode, message: response.data.message };
+      }
+    } catch (error) {
+      let errorMessage = "Could not follow user.";
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      console.error("Follow error:", errorMessage);
+      return { status: error.response?.status || 500, message: errorMessage };
     }
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await axiosInstance.post(API_ROUTES.AUTH_SERVICE.SIGNOUT, {}, { withCredentials: true });
-      dispatch({ type: actionTypes.LOGOUT });
-         dispatch({ type: actionTypes.CLEAR_STATE });
-      router.push("/");
-    } catch (err) {
-      dispatch({ type: actionTypes.ERROR, payload: "Logout failed" });
-    }
-  }, [router]);
-  //   const logout = useCallback(async () => {
-  //   dispatch({ type: actionTypes.LOADING });
-  //   try {
-  //     const logoutUrl = API_ROUTES.AUTH_SERVICE.SIGNOUT;
-  //     if (!logoutUrl || !logoutUrl.startsWith("http")) {
-  //       throw new Error(`Invalid logout URL: ${logoutUrl}. Ensure NEXT_PUBLIC_API_BASE_URL is set.`);
-  //     }
-  //     console.log("Attempting logout with URL:", logoutUrl);
-
-  //     await axiosInstance.post(logoutUrl, {});
-  //     dispatch({ type: actionTypes.LOGOUT });
-  //     dispatch({ type: actionTypes.CLEAR_STATE });
-  //     router.push("/");
-  //   } catch (error) {
-  //     console.error("Logout error:", error.message);
-  //     dispatch({ type: actionTypes.LOGOUT });
-  //     dispatch({ type: actionTypes.CLEAR_STATE });
-  //     router.push("/");
-  //   }
-  // }, [router]);
-
+    forceLogout();
+  }, [forceLogout]);
 
   const clearState = useCallback(() => {
-    dispatch({ type: actionTypes.CLEAR });
+    dispatch({ type: actionTypes.CLEAR_STATE });
   }, []);
 
-  // ✅ Check auth on mount
-//   useEffect(() => {
-//   if (!window.location.pathname.startsWith("/Registration") &&
-//       !window.location.pathname.startsWith("/Birthday")) {
-//     checkAuth();
-//   }
-// }, [checkAuth]);
-useEffect(() => {
-  checkAuth();
-}, [checkAuth]);
-
-
   return (
-    <AuthContext.Provider value={{ state, signin, logout, clearState, checkAuth }}>
+    <AuthContext.Provider
+      value={{
+        state,
+        signin,
+        logout,
+        clearState,
+        forceLogout,
+        followUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
+export { onAuthLogoutCallback };

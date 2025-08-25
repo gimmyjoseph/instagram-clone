@@ -1,156 +1,192 @@
 
 
+// "use client";
+
+// import React, { createContext, useReducer, useContext, useCallback, useEffect } from "react";
+// import { useAuth } from "@/context/AuthContext";
+// import axiosInstance from "@/utils/auth/axiosInstance";
+// import { API_ROUTES } from "@/config";
+
+// const UserContext = createContext();
+
+// const initialState = {
+//   user: null,
+//   loading: true,
+//   error: null,
+// };
+
+// const actionTypes = {
+//   SET_USER_PROFILE: "SET_USER_PROFILE",
+//   CLEAR_PROFILE: "CLEAR_PROFILE",
+//   SET_LOADING: "SET_LOADING",
+//   SET_ERROR: "SET_ERROR",
+// };
+
+// function userReducer(state, action) {
+//   switch (action.type) {
+//     case actionTypes.SET_USER_PROFILE:
+//       return { ...state, user: action.payload, loading: false, error: null };
+//     case actionTypes.CLEAR_PROFILE:
+//       return { ...initialState, loading: false };
+//     case actionTypes.SET_LOADING:
+//       return { ...state, loading: action.payload };
+//     case actionTypes.SET_ERROR:
+//       return { ...state, loading: false, error: action.payload };
+//     default:
+//       return state;
+//   }
+// }
+
+// export const UserProvider = ({ children }) => {
+//   const [state, dispatch] = useReducer(userReducer, initialState);
+//   const { state: authState } = useAuth();
+
+//   const fetchProfile = useCallback(async () => {
+//     if (!authState.isAuthenticated || !authState.user?.userId) {
+//       dispatch({ type: actionTypes.CLEAR_PROFILE });
+//       console.log("User not authenticated or userId is missing. Skipping profile fetch.");
+//       return;
+//     }
+
+//     dispatch({ type: actionTypes.SET_LOADING, payload: true });
+//     console.log("Fetching profile for userId:", authState.user.userId);
+    
+//     try {
+//       // 🔑 CHANGE: Use the correct, new API route for the user profile
+//       const response = await axiosInstance.get(
+//         `${API_ROUTES.AUTH_SERVICE.PROFILE}?userId=${authState.user.userId}`
+//       );
+//       if (response.data.success) {
+//         dispatch({
+//           type: actionTypes.SET_USER_PROFILE,
+//           payload: response.data.data,
+//         });
+//       } else {
+//         dispatch({
+//           type: actionTypes.SET_ERROR,
+//           payload: response.data.message || "Failed to fetch user profile.",
+//         });
+//       }
+//     } catch (err) {
+//       const message = err.response?.data?.message || "Error fetching profile.";
+//       dispatch({ type: actionTypes.SET_ERROR, payload: message });
+//     }
+//   }, [authState]);
+
+//   useEffect(() => {
+//     if (authState.isAuthenticated && authState.user) {
+//       dispatch({ type: actionTypes.SET_USER_PROFILE, payload: authState.user });
+//       fetchProfile();
+//     } else {
+//       dispatch({ type: actionTypes.CLEAR_PROFILE });
+//     }
+//   }, [authState, fetchProfile]);
+
+//   return (
+//     <UserContext.Provider
+//       value={{
+//         state,
+//         fetchProfile,
+//       }}
+//     >
+//       {children}
+//     </UserContext.Provider>
+//   );
+// };
+
+// export const useUser = () => {
+//   const context = useContext(UserContext);
+//   if (!context) {
+//     throw new Error("useUser must be used within a UserProvider");
+//   }
+//   return context;
+// };
 "use client";
 
-import React, { createContext, useReducer, useContext, useCallback, useState } from "react";
+import React, { createContext, useReducer, useContext, useCallback, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import axiosInstance from "@/utils/auth/axiosInstance";
 import { API_ROUTES } from "@/config";
 
+const UserContext = createContext();
+
 const initialState = {
-  loading: false,
-  error: null,
   user: null,
+  loading: true,
+  error: null,
 };
 
 const actionTypes = {
-  LOADING: "LOADING",
-  ERROR: "ERROR",
   SET_USER_PROFILE: "SET_USER_PROFILE",
-  CLEAR_USER_DATA: "CLEAR_USER_DATA",
+  CLEAR_PROFILE: "CLEAR_PROFILE",
+  SET_LOADING: "SET_LOADING",
+  SET_ERROR: "SET_ERROR",
 };
 
-const userReducer = (state, action) => {
+function userReducer(state, action) {
   switch (action.type) {
-    case actionTypes.LOADING:
-      return { ...state, loading: true, error: null };
-    case actionTypes.ERROR:
-      return { ...state, loading: false, error: action.payload };
     case actionTypes.SET_USER_PROFILE:
-      return { ...state, loading: false, user: action.payload, error: null };
-    case actionTypes.CLEAR_USER_DATA:
-      return { ...state, user: null, error: null };
+      return { ...state, user: action.payload, loading: false, error: null };
+    case actionTypes.CLEAR_PROFILE:
+      return { ...initialState, loading: false };
+    case actionTypes.SET_LOADING:
+      return { ...state, loading: action.payload };
+    case actionTypes.SET_ERROR:
+      return { ...state, loading: false, error: action.payload };
     default:
       return state;
   }
-};
-
-const UserContext = createContext();
+}
 
 export const UserProvider = ({ children }) => {
   const [state, dispatch] = useReducer(userReducer, initialState);
-  const [isFetching, setIsFetching] = useState(false);
+  const { state: authState } = useAuth();
 
   const fetchProfile = useCallback(async () => {
-    if (isFetching || state.user) return;
-    setIsFetching(true);
-    dispatch({ type: actionTypes.LOADING });
+    if (!authState.isAuthenticated) {
+      dispatch({ type: actionTypes.CLEAR_PROFILE });
+      console.log("User not authenticated. Skipping profile fetch.");
+      return;
+    }
+
+    dispatch({ type: actionTypes.SET_LOADING, payload: true });
+    console.log("Fetching profile");
+    
     try {
-      console.log("Fetching profile from:", API_ROUTES.AUTH_SERVICE.PROFILE);
       const response = await axiosInstance.get(API_ROUTES.AUTH_SERVICE.PROFILE);
-      console.log("Profile response:", JSON.stringify(response.data, null, 2));
-
-      if (typeof response.data === "string" || (response.data.message && !response.data.user_id)) {
-        throw new Error(response.data.message || response.data || "Failed to fetch profile");
-      }
-
-      const {
-        user_id,
-        id,
-        userId,
-        username,
-        userName,
-        user_name,
-        name,
-        full_name,
-        fullName,
-        email,
-        phone_number,
-        phoneNumber,
-        phone,
-        isPhoneVerified,
-        is_phone_verified,
-        emailVerified,
-        email_verified,
-        otp,
-        isPrivate,
-      } = response.data;
-
-      const userIdFinal = user_id || id || userId;
-      const userNameFinal = username || userName || user_name || name || `user_${Date.now()}`;
-      const fullNameFinal = full_name || fullName || null;
-      const phoneNumberFinal = phone_number || phoneNumber || phone || null;
-
-      if (!userIdFinal) {
-        throw new Error("Invalid profile data: missing user ID (user_id/id/userId)");
-      }
-
-      if ((email && phoneNumberFinal) || (!email && !phoneNumberFinal)) {
-        throw new Error("Invalid profile data: User must have exactly one of email or phoneNumber");
-      }
-
-      const [firstName, ...lastNameParts] = (fullNameFinal || "").split(" ");
-      const lastName = lastNameParts.join(" ") || "";
-      const userData = {
-        id: userIdFinal,
-        email: email || null,
-        phoneNumber: phoneNumberFinal || null,
-        userName: userNameFinal,
-        fullName: fullNameFinal,
-        first_name: firstName,
-        last_name: lastName,
-        isPhoneVerified: isPhoneVerified || is_phone_verified || false,
-        emailVerified: emailVerified || email_verified || false,
-        otp: otp || null,
-        isPrivate: isPrivate || false,
-      };
-      dispatch({ type: actionTypes.SET_USER_PROFILE, payload: userData });
-      console.log("User profile set:", userData);
-    } catch (error) {
-      const message = error.response?.data?.message || error.message || "Failed to fetch profile";
-      console.error("Fetch profile error:", message, error);
-      dispatch({ type: actionTypes.ERROR, payload: message });
-      throw error;
-    } finally {
-      setIsFetching(false);
-    }
-  }, [isFetching, state.user]);
-
-  const updateProfile = useCallback(async ({ isPrivate }) => {
-    dispatch({ type: actionTypes.LOADING });
-    try {
-      const privacyUrl = `${API_ROUTES.AUTH_SERVICE.PRIVACY.replace("{id}", state.user?.id)}?isPrivate=${isPrivate}`;
-      console.log("Updating privacy with URL:", privacyUrl);
-      const response = await axiosInstance.patch(privacyUrl);
-      console.log("Update privacy response:", JSON.stringify(response.data, null, 2));
-
       if (response.data.success) {
-        const updatedUser = {
-          ...state.user,
-          isPrivate: isPrivate || false,
-        };
-        dispatch({ type: actionTypes.SET_USER_PROFILE, payload: updatedUser });
-        console.log("User profile updated:", updatedUser);
-        return {
-          status: 200,
-          message: response.data.message || "Privacy updated successfully",
-        };
+        dispatch({
+          type: actionTypes.SET_USER_PROFILE,
+          payload: response.data.data,
+        });
       } else {
-        throw new Error(response.data.message || "Failed to update privacy");
+        dispatch({
+          type: actionTypes.SET_ERROR,
+          payload: response.data.message || "Failed to fetch user profile.",
+        });
       }
-    } catch (error) {
-      const message = error.response?.data?.message || error.message || "Failed to update privacy";
-      console.error("Update privacy error:", message);
-      dispatch({ type: actionTypes.ERROR, payload: message });
-      throw error;
+    } catch (err) {
+      const message = err.response?.data?.message || "Error fetching profile.";
+      dispatch({ type: actionTypes.SET_ERROR, payload: message });
     }
-  }, [state.user]);
+  }, [authState]);
 
-  const clearUserData = useCallback(() => {
-    dispatch({ type: actionTypes.CLEAR_USER_DATA });
-  }, []);
+  useEffect(() => {
+    if (authState.isAuthenticated && authState.user) {
+      dispatch({ type: actionTypes.SET_USER_PROFILE, payload: authState.user });
+      fetchProfile();
+    } else {
+      dispatch({ type: actionTypes.CLEAR_PROFILE });
+    }
+  }, [authState, fetchProfile]);
 
   return (
-    <UserContext.Provider value={{ state, fetchProfile, updateProfile, clearUserData }}>
+    <UserContext.Provider
+      value={{
+        state,
+        fetchProfile,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

@@ -167,7 +167,7 @@ public class SmsService {
         if (optionalRegister.isPresent()) {
             Register foundRegister = optionalRegister.get();
             foundRegister.setPhoneVerified(true);
-            foundRegister.setUserId(foundRegister.getObjectId().toHexString());
+            foundRegister.setUserId(foundRegister.getObjectId());
              // Add this field in Register model
             registerRepository.save(foundRegister);
         }

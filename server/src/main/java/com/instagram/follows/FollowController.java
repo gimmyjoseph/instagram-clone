@@ -1,3 +1,5 @@
+
+
 package com.instagram.follows;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,5 +57,14 @@ public class FollowController {
         Response response = followService.getNonFollowedUsers(userId);
         return ResponseEntity.status(response.getStatuscode()).body(response);
     }
+
+    @PostMapping("/remove")
+public ResponseEntity<Response> removeFollower(
+        @RequestParam("userId") String userId,
+        @RequestParam("followerId") String followerId) {
+    Response response = followService.removeFollower(userId, followerId);
+    return ResponseEntity.status(response.getStatuscode()).body(response);
+}
+
   }
 

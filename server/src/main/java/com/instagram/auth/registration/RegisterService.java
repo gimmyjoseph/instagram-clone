@@ -329,7 +329,7 @@ public class RegisterService {
 
     // Set userId if not already set
     if (userToSave.getUserId() == null || userToSave.getUserId().isEmpty()) {
-        userToSave.setUserId(userToSave.getObjectId().toHexString());
+        userToSave.setUserId(userToSave.getObjectId());
         registerRepository.save(userToSave); // Save again with userId
     }
 
@@ -369,7 +369,7 @@ public class RegisterService {
 
     // Set userId if not already set
     if (userToSave.getUserId() == null || userToSave.getUserId().isEmpty()) {
-        userToSave.setUserId(userToSave.getObjectId().toHexString());
+        userToSave.setUserId(userToSave.getObjectId());
         registerRepository.save(userToSave); // Update with userId
     }
 

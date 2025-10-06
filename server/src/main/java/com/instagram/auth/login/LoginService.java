@@ -420,7 +420,7 @@ public class LoginService {
 
         // 4️⃣ Generate JWT tokens with all user details in claims
         Map<String, Object> claims = new LinkedHashMap<>();
-        claims.put("userId", user.getObjectId().toHexString());
+        claims.put("userId", user.getObjectId());
         claims.put("fullName", user.getFullName());
         claims.put("email", user.getEmail());
         claims.put("userName", user.getUserName());
@@ -432,10 +432,10 @@ public class LoginService {
         claims.put("followingCount", user.getFollowingCount());
         claims.put("followerCount", user.getFollowerCount());
 
-        String accessToken = jwtUtil.generateAccessToken(user.getObjectId().toHexString(), claims);
-        String refreshToken = jwtUtil.generateRefreshToken(user.getObjectId().toHexString());
+        String accessToken = jwtUtil.generateAccessToken(user.getObjectId(), claims);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getObjectId());
 
-        saveTokens(user.getObjectId().toHexString(), user.getEmail(), accessToken, refreshToken);
+        saveTokens(user.getObjectId(), user.getEmail(), accessToken, refreshToken);
 
         // 5️⃣ Set cookies using ResponseCookie
         ResponseCookie accessCookie = ResponseCookie.from("access_token", accessToken)
@@ -459,7 +459,7 @@ public class LoginService {
 
         // 6️⃣ Prepare response body with all user details
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("userId", user.getObjectId().toHexString());
+        data.put("userId", user.getObjectId());
         data.put("fullName", user.getFullName());
         data.put("email", user.getEmail());
         data.put("userName", user.getUserName());

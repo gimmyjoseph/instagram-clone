@@ -39,7 +39,10 @@ public interface RegisterRepository  extends MongoRepository<Register, ObjectId>
          Optional<Register> findByEmail(String email);
          Optional<Register> findByUserName(String userName);
         Optional<Register> findByUserId(String userId);
-         
+         // ✅ Search users by username or fullname (case-insensitive)
+//     List<Register> findByUserNameContainingIgnoreCaseOrFullNameContainingIgnoreCase(String userName,String fullName);
+List<Register> findByUserNameContainingIgnoreCaseOrFullNameContainingIgnoreCase(String username, String fullName);
+
  }
          
 

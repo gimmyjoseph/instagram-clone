@@ -386,11 +386,12 @@ public class ProfileController {
                 return ResponseEntity.status(400).body(new Response(400, "Profile response missing userId", false));
             }
             
-            userData.computeIfAbsent("userName", k -> "Unknown");
+            userData.computeIfAbsent("username", k -> "Unknown");
             userData.computeIfAbsent("email", k -> "");
             userData.computeIfAbsent("fullName", k -> "");
             userData.computeIfAbsent("followerCount", k -> 0);
             userData.computeIfAbsent("followingCount", k -> 0);
+            userData.computeIfAbsent("postCount",k->0);
             
             return ResponseEntity.ok(new Response(200, "Profile retrieved", true, userData));
         } else {

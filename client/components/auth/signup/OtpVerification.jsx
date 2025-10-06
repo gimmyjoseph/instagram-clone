@@ -57,7 +57,7 @@ const OtpVerification = () => {
       payload
     );
     console.log("Verification success:", response.data);
-    router.push("/Example"); // Redirect to next step after successful verification
+    router.push("/"); // Redirect to next step after successful verification
   } catch (error) {
     console.error("Verification failed:", error);
   }

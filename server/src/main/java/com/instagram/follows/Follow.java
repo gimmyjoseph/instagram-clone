@@ -1,3 +1,4 @@
+ 
 package com.instagram.follows;
 
 import org.springframework.data.annotation.Id;
@@ -9,9 +10,11 @@ public class Follow {
     private String Id;
     private String followerId;
     private String followingId;
-    public String getId() {
-        return Id;
-    }
+     public String getId() {
+         return Id;
+     }
+    
+    
     public void setId(String id) {
         Id = id;
     }

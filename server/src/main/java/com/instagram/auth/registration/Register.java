@@ -119,7 +119,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.instagram.posts.Posts;
 
 @Document(collection="users")
@@ -143,6 +142,7 @@ public class Register {
     private boolean isPrivate=false;
     private long followingCount;
     private long followerCount;
+    private long postCount;
 
     
 
@@ -198,9 +198,13 @@ public class Register {
     public void setPhoneVerified(Boolean isPhoneVerified) {
         this.isPhoneVerified = isPhoneVerified;
     }
-     public ObjectId getObjectId() {
-        return objectId;
+    //  public ObjectId getObjectId() {
+    //     return objectId;
+    // }
+    public String getObjectId() {
+        return objectId != null ? objectId.toHexString() : null;
     }
+    
     public void setObjectId(ObjectId objectId) {
         this.objectId = objectId;
     }
@@ -233,6 +237,14 @@ public class Register {
     }
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public long getPostCount() {
+        return postCount;
+    }
+
+    public void setPostCount(long postCount) {
+        this.postCount = postCount;
     }
 
 }

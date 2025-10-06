@@ -1,69 +1,4 @@
 
-// import axios from "axios";
-// import { API_ROUTES } from "@/config";
-// import { onAuthLogoutCallback } from "@/context/AuthContext";
-
-// const axiosInstance = axios.create({
-//   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-//   withCredentials: true,
-// });
-
-// let isRefreshing = false;
-// let failedQueue = [];
-
-// const processQueue = (error) => {
-//   failedQueue.forEach((prom) => {
-//     if (error) {
-//       prom.reject(error);
-//     } else {
-//       prom.resolve();
-//     }
-//   });
-//   failedQueue = [];
-// };
-
-// axiosInstance.interceptors.response.use(
-//   (response) => {
-//     return response;
-//   },
-//   async (error) => {
-//     const originalRequest = error.config;
-//     if (error.response && error.response.status === 401 && !originalRequest._retry) {
-//       originalRequest._retry = true;
-      
-//       if (isRefreshing) {
-//         return new Promise((resolve, reject) => {
-//           failedQueue.push({ resolve, reject });
-//         }).then(() => {
-//           return axiosInstance(originalRequest);
-//         }).catch((err) => {
-//           return Promise.reject(err);
-//         });
-//       }
-
-//       isRefreshing = true;
-
-//       try {
-//         await axiosInstance.post(
-//           API_ROUTES.AUTH_SERVICE.REFRESH_TOKEN
-//         );
-//         processQueue(null);
-//         return axiosInstance(originalRequest);
-//       } catch (refreshError) {
-//         if (onAuthLogoutCallback) {
-//           onAuthLogoutCallback();
-//         }
-//         processQueue(refreshError);
-//         return Promise.reject(refreshError);
-//       } finally {
-//         isRefreshing = false;
-//       }
-//     }
-//     return Promise.reject(error);
-//   }
-// );
-
-// export default axiosInstance;
 
 
 import axios from "axios";
@@ -167,3 +102,4 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
+

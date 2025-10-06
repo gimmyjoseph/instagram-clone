@@ -1,0 +1,54 @@
+# =========================
+# Logs
+# =========================
+*.log
+replay_pid*.log
+hs_err_pid*.log
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Node.js / frontend
+# =========================
+node_modules/
+dist/
+build/
+.env
+npm-debug.log
+yarn-error.log
+
+# =========================
+# Java / backend
+# =========================
+*.class
+*.jar
+*.war
+*.iml
+*.ipr
+*.iws
+out/
+target/
+*.keystore
+
+# =========================
+# IDE / editor
+# =========================
+.vscode/
+.idea/
+*.swp
+
+# =========================
+# Spring Boot / configs
+# =========================
+server/src/main/resources/application.properties
+server/src/main/resources/application.yml
+
+# =========================
+# Misc
+# =========================
+*.tmp
+*.bak
